@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80" fill="none">
+  <!-- Flag pole -->
+  <rect x="4" y="4" width="4" height="72" fill="white" rx="2"/>
+  <!-- Flag body (checkered pattern) -->
+  <rect x="8" y="4" width="68" height="40" rx="2" fill="white"/>
+  <!-- Checkered squares - row 1 -->
+  <rect x="8" y="4" width="11.33" height="10" fill="black"/>
+  <rect x="19.33" y="4" width="11.33" height="10" fill="white"/>
+  <rect x="30.66" y="4" width="11.33" height="10" fill="black"/>
+  <rect x="42" y="4" width="11.33" height="10" fill="white"/>
+  <rect x="53.33" y="4" width="11.33" height="10" fill="black"/>
+  <rect x="64.66" y="4" width="11.34" height="10" fill="white"/>
+  <!-- Checkered squares - row 2 -->
+  <rect x="8" y="14" width="11.33" height="10" fill="white"/>
+  <rect x="19.33" y="14" width="11.33" height="10" fill="black"/>
+  <rect x="30.66" y="14" width="11.33" height="10" fill="white"/>
+  <rect x="42" y="14" width="11.33" height="10" fill="black"/>
+  <rect x="53.33" y="14" width="11.33" height="10" fill="white"/>
+  <rect x="64.66" y="14" width="11.34" height="10" fill="black"/>
+  <!-- Checkered squares - row 3 -->
+  <rect x="8" y="24" width="11.33" height="10" fill="black"/>
+  <rect x="19.33" y="24" width="11.33" height="10" fill="white"/>
+  <rect x="30.66" y="24" width="11.33" height="10" fill="black"/>
+  <rect x="42" y="24" width="11.33" height="10" fill="white"/>
+  <rect x="53.33" y="24" width="11.33" height="10" fill="black"/>
+  <rect x="64.66" y="24" width="11.34" height="10" fill="white"/>
+  <!-- Checkered squares - row 4 -->
+  <rect x="8" y="34" width="11.33" height="10" fill="white"/>
+  <rect x="19.33" y="34" width="11.33" height="10" fill="black"/>
+  <rect x="30.66" y="34" width="11.33" height="10" fill="white"/>
+  <rect x="42" y="34" width="11.33" height="10" fill="black"/>
+  <rect x="53.33" y="34" width="11.33" height="10" fill="white"/>
+  <rect x="64.66" y="34" width="11.34" height="10" fill="black"/>
+</svg>
