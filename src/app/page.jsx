@@ -1,496 +1,365 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
-import RacingHero from "@/components/RacingHero";
-import FinishOverlay from "@/components/FinishOverlay";
+import { useEffect, useRef } from "react";
+import Image from "next/image";
 
 /**
- * Home — Root page component.
- * Handles all GSAP ScrollTrigger animation logic directly here.
+ * ITZ FIZZ — The Race Experience
  *
- * KEY ARCHITECTURE NOTE:
- * - The outer `section` (sectionRef) has height: 600vh — it's the scroll driver.
- * - Inside is a sticky container (height: 100vh) that stays fixed while you scroll.
- * - The bike (bikeRef) is absolutely positioned inside the sticky container.
- * - SVG coordinates are converted to sticky-container-relative coordinates.
+ * Exactly like the reference (car-scroll-animation):
+ * - Page does NOT scroll visually — only the bike moves
+ * - A 500vh scroll-driver div gives ScrollTrigger its range
+ * - The scene is sticky at top:0, 100vh
+ * - Bike moves left→right along a straight horizontal road
+ * - Text boxes (headline + 4 stats) fade in as bike passes them
+ * - Finish "RACE WON" state at the end
  */
 export default function Home() {
-  const sectionRef = useRef(null);
-  const stickyRef = useRef(null);   // the sticky 100vh container
-  const trackRef = useRef(null);
-  const bikeRef = useRef(null);
-  const pathRef = useRef(null);
-  const racingLineRef = useRef(null);
-  const checkpointRefs = useRef([]);
-  const finishRef = useRef(null);
-  const heroTextRef = useRef(null);
-  const statsRef = useRef(null);
-  const scrollIndicatorRef = useRef(null);
-  const gsapCtxRef = useRef(null);
+  const bikeRef    = useRef(null);
+  const trailRef   = useRef(null);
+  const finishRef  = useRef(null);
 
-  const setCheckpointRef = useCallback((el, index) => {
-    checkpointRefs.current[index] = el;
-  }, []);
+  // Individual text box refs
+  const box0Ref = useRef(null); // WELCOME ITZ FIZZ
+  const box1Ref = useRef(null); // 58%
+  const box2Ref = useRef(null); // 23%
+  const box3Ref = useRef(null); // 27%
+  const box4Ref = useRef(null); // 40%
+
+  // Checkpoint refs
+  const cp1Ref = useRef(null);
+  const cp2Ref = useRef(null);
+  const cp3Ref = useRef(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    // Respect reduced-motion
-    const prefersReducedMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)"
-    ).matches;
-
-    if (prefersReducedMotion) {
-      [sectionRef, heroTextRef, statsRef, bikeRef, scrollIndicatorRef].forEach(
-        (r) => {
-          if (r.current) r.current.style.opacity = "1";
-        }
-      );
-      const statItems = statsRef.current?.querySelectorAll(".stat-item");
-      statItems?.forEach((el) => (el.style.opacity = "1"));
-      return;
-    }
-
+    let ctx;
     let cancelled = false;
 
-    const initGsap = async () => {
-      const { gsap } = await import("gsap");
+    const init = async () => {
+      const { gsap }         = await import("gsap");
       const { ScrollTrigger } = await import("gsap/ScrollTrigger");
       if (cancelled) return;
 
       gsap.registerPlugin(ScrollTrigger);
 
-      // Clean up previous context
-      if (gsapCtxRef.current) gsapCtxRef.current.revert();
+      const bike    = bikeRef.current;
+      const trail   = trailRef.current;
+      const finish  = finishRef.current;
+      const boxes   = [box0Ref, box1Ref, box2Ref, box3Ref, box4Ref].map(r => r.current);
+      const cps     = [cp1Ref, cp2Ref, cp3Ref].map(r => r.current);
 
-      gsapCtxRef.current = gsap.context(() => {
-        const section = sectionRef.current;
-        const sticky = stickyRef.current;
-        const bike = bikeRef.current;
-        const path = pathRef.current;
-        const racingLine = racingLineRef.current;
-        const finishEl = finishRef.current;
-        const heroText = heroTextRef.current;
-        const statsEl = statsRef.current;
-        const scrollIndicator = scrollIndicatorRef.current;
+      if (!bike) return;
 
-        if (!section || !sticky || !bike || !path) return;
+      // Road goes edge-to-edge; bike travels from ~4% to ~96% of viewport width
+      const roadStart   = 0.04;  // 4% vw  — starting position
+      const roadEnd     = 0.96;  // 96% vw — finish position
+      const bikeWidthPx = bike.offsetWidth || 220;
 
-        // SVG viewBox dimensions (must match RacingTrack.jsx viewBox)
-        const VB_W = 800;
-        const VB_H = 500;
+      // Convert fraction [0..1] to a CSS left value (px) that centres bike on that fraction
+      const toLeft = (frac) => window.innerWidth * frac - bikeWidthPx / 2;
 
-        // Get real SVG element
-        const svgEl = path.closest("svg");
+      // Set initial bike position
+      gsap.set(bike, { x: toLeft(roadStart) - (window.innerWidth * roadStart) });
+      // Actually just use `left` property for simplicity
+      bike.style.left = toLeft(roadStart) + "px";
 
-        /**
-         * Convert SVG viewBox coordinates → sticky-container-relative px.
-         * The sticky container is always viewport-height and positioned at top:0
-         * of the viewport while pinned, so we use its bounding rect as origin.
-         */
-        const toContainerCoords = (svgX, svgY) => {
-          if (!svgEl) return { x: svgX, y: svgY };
-          const svgRect = svgEl.getBoundingClientRect();
-          const containerRect = sticky.getBoundingClientRect();
-          const sx = svgRect.width / VB_W;
-          const sy = svgRect.height / VB_H;
-          return {
-            x: (svgRect.left - containerRect.left) + svgX * sx,
-            y: (svgRect.top - containerRect.top) + svgY * sy,
-          };
-        };
+      // ── Text-box trigger positions (as fraction of scroll progress) ──
+      // The bike reveals each box as it passes the box's road position
+      const triggers = [
+        { ref: box0Ref, atProgress: 0.05 }, // Welcome ITZ FIZZ — appears right away
+        { ref: box1Ref, atProgress: 0.22 }, // 58%
+        { ref: box2Ref, atProgress: 0.40 }, // 23%
+        { ref: box3Ref, atProgress: 0.57 }, // 27%
+        { ref: box4Ref, atProgress: 0.74 }, // 40%
+      ];
 
-        /**
-         * Get bike position + rotation angle for a given scroll fraction [0..1].
-         */
-        const getPathPoint = (fraction) => {
-          const len = path.getTotalLength();
-          const pos = Math.min(Math.max(fraction, 0), 1) * len;
-          const pt = path.getPointAtLength(pos);
-          const delta = 4;
-          const ptA = path.getPointAtLength(Math.max(0, pos - delta));
-          const ptB = path.getPointAtLength(Math.min(len, pos + delta));
-          const angle =
-            Math.atan2(ptB.y - ptA.y, ptB.x - ptA.x) * (180 / Math.PI);
-          return { svgX: pt.x, svgY: pt.y, angle };
-        };
+      const cpTriggers = [0.25, 0.50, 0.75]; // checkpoint activation fractions
 
-        // Total path length for racing line dash animation
-        const pathLength = path.getTotalLength();
+      // Track active states for reverse support
+      const boxActive = [false, false, false, false, false];
+      const cpActive  = [false, false, false];
+      let finishActive = false;
 
-        // Init racing line to fully hidden (drawn as bike progresses)
-        if (racingLine) {
-          gsap.set(racingLine, {
-            strokeDasharray: pathLength,
-            strokeDashoffset: pathLength,
-          });
-        }
-
-        // Place bike at circuit START (fraction = 0)
-        const startPt = getPathPoint(0);
-        const startCoords = toContainerCoords(startPt.svgX, startPt.svgY);
-        const bikeW = bike.offsetWidth || 200;
-        const bikeH = bike.offsetHeight || 112;
-        gsap.set(bike, {
-          x: startCoords.x - bikeW / 2,
-          y: startCoords.y - bikeH / 2,
-          rotation: startPt.angle,
-          opacity: 0,
-        });
-
-        // ════════════════════════════════════════════════
-        //  ENTRANCE ANIMATION (fires once on page load)
-        // ════════════════════════════════════════════════
-        const entranceTL = gsap.timeline({ delay: 0.4 });
-
-        // 1. Section fade in (background + track become visible)
-        entranceTL.fromTo(
-          section,
-          { opacity: 0 },
-          { opacity: 1, duration: 0.9, ease: "power2.out" }
-        );
-
-        // 2. Headline character reveal
-        if (heroText) {
-          // heroTextRef is on the pre-headline wrapper; the h1 is a sibling
-          const h1 = heroText.nextElementSibling;
-          const chars = h1?.querySelectorAll(".hero-char");
-          if (chars && chars.length > 0) {
-            entranceTL.fromTo(
-              chars,
-              { y: 80, opacity: 0, skewY: 4 },
-              {
-                y: 0,
-                opacity: 1,
-                skewY: 0,
-                duration: 0.85,
-                stagger: 0.025,
-                ease: "power4.out",
-              },
-              "-=0.3"
-            );
-          }
-          // Also animate the pre-headline bar
-          entranceTL.fromTo(
-            heroText,
-            { y: 20, opacity: 0 },
-            { y: 0, opacity: 1, duration: 0.5, ease: "power2.out" },
-            "<"
-          );
-        }
-
-        // 3. Stats stagger entrance
-        if (statsEl) {
-          const statItems = statsEl.querySelectorAll(".stat-item");
-          if (statItems.length) {
-            entranceTL.fromTo(
-              statItems,
-              { y: 30, opacity: 0 },
-              {
-                y: 0,
-                opacity: 1,
-                duration: 0.6,
-                stagger: 0.1,
-                ease: "power2.out",
-              },
-              "-=0.3"
-            );
-          }
-        }
-
-        // 4. Bike enters the scene
-        entranceTL.fromTo(
-          bike,
-          { opacity: 0, scale: 0.85 },
-          { opacity: 1, scale: 1, duration: 1.0, ease: "back.out(1.5)" },
-          "-=0.5"
-        );
-
-        // 5. Scroll indicator appears
-        if (scrollIndicator) {
-          entranceTL.fromTo(
-            scrollIndicator,
-            { opacity: 0, y: -15 },
-            { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
-            "-=0.2"
-          );
-        }
-
-        // ════════════════════════════════════════════════
-        //  SCROLL-DRIVEN RACE (main animation)
-        // ════════════════════════════════════════════════
-        // Checkpoint fractions: bike triggers each at these progress values
-        const checkpointFractions = [0.3, 0.56, 0.78];
-        const cpActiveStates = [false, false, false];
-
+      // ─── Main scroll trigger ───
+      ctx = gsap.context(() => {
         ScrollTrigger.create({
-          trigger: section,
+          trigger: ".scroll-driver",
           start: "top top",
           end: "bottom bottom",
-          scrub: 1.2,
+          scrub: 1,
           onUpdate: (self) => {
             const p = self.progress;
 
-            // ── 1. Move bike along the SVG path ──
-            const pt = getPathPoint(p);
-            const coords = toContainerCoords(pt.svgX, pt.svgY);
-            const bW = bike.offsetWidth || 200;
-            const bH = bike.offsetHeight || 112;
+            // ── 1. Bike left position ──
+            const frac = roadStart + p * (roadEnd - roadStart);
+            const leftPx = window.innerWidth * frac - bikeWidthPx / 2;
+            bike.style.left = leftPx + "px";
 
-            // Clamp rotation so bike doesn't appear upside-down
-            const clampedAngle = Math.max(-35, Math.min(35, pt.angle));
-
-            gsap.set(bike, {
-              x: coords.x - bW / 2,
-              y: coords.y - bH / 2,
-              rotation: clampedAngle,
-            });
-
-            // ── 2. Draw racing line up to current progress ──
-            if (racingLine) {
-              gsap.set(racingLine, {
-                strokeDashoffset: pathLength * (1 - p),
-              });
+            // ── 2. Red trail behind bike ──
+            if (trail) {
+              trail.style.width = (frac * 100) + "%";
             }
 
-            // ── 3. Activate / deactivate checkpoints ──
-            checkpointFractions.forEach((fraction, i) => {
-              const el = checkpointRefs.current[i];
+            // ── 3. Text boxes reveal / hide on progress ──
+            triggers.forEach(({ ref, atProgress }, i) => {
+              const el = ref.current;
               if (!el) return;
-              const shouldBeActive = p >= fraction;
-              if (cpActiveStates[i] !== shouldBeActive) {
-                cpActiveStates[i] = shouldBeActive;
-                el.dataset.active = shouldBeActive ? "true" : "false";
+              const shouldShow = p >= atProgress;
+              if (shouldShow !== boxActive[i]) {
+                boxActive[i] = shouldShow;
+                gsap.to(el, {
+                  opacity: shouldShow ? 1 : 0,
+                  y:       shouldShow ? 0 : (i % 2 === 0 ? -10 : 10),
+                  duration: 0.35,
+                  ease: "power2.out",
+                });
               }
             });
 
-            // ── 4. Reveal finish overlay (last 8% of scroll) ──
-            if (finishEl) {
-              const finishProg = Math.max(0, Math.min(1, (p - 0.92) / 0.08));
-              gsap.set(finishEl, {
-                opacity: finishProg,
-                pointerEvents: finishProg > 0.5 ? "auto" : "none",
-              });
-            }
+            // ── 4. Checkpoint markers ──
+            cpTriggers.forEach((frac, i) => {
+              const el = cps[i];
+              if (!el) return;
+              const shouldBeActive = p >= frac;
+              if (shouldBeActive !== cpActive[i]) {
+                cpActive[i] = shouldBeActive;
+                el.classList.toggle("active", shouldBeActive);
+              }
+            });
 
-            // ── 5. Fade out scroll indicator as race begins ──
-            if (scrollIndicator) {
-              const fadeOut = Math.max(0, 1 - p * 20);
-              gsap.set(scrollIndicator, { opacity: fadeOut });
+            // ── 5. Finish overlay (last 5% of scroll) ──
+            if (finish) {
+              const finishProg = Math.max(0, Math.min(1, (p - 0.95) / 0.05));
+              const shouldFinish = finishProg > 0;
+              if (shouldFinish !== finishActive || finishProg > 0) {
+                finishActive = shouldFinish;
+                finish.style.opacity = finishProg;
+                finish.style.pointerEvents = finishProg > 0.5 ? "auto" : "none";
+              }
             }
           },
         });
 
-        // ── Recalculate on resize ──
-        const handleResize = () => {
-          ScrollTrigger.refresh();
-          // Re-place bike at current position immediately after resize
-        };
-        window.addEventListener("resize", handleResize, { passive: true });
-
-        // ── Refresh after images load (bike asset) ──
-        const imgs = section.querySelectorAll("img");
-        let loaded = 0;
-        const total = imgs.length;
-        if (total === 0) {
-          ScrollTrigger.refresh();
-        } else {
-          imgs.forEach((img) => {
-            const onLoad = () => {
-              loaded++;
-              if (loaded >= total) ScrollTrigger.refresh();
-            };
-            if (img.complete) onLoad();
-            else img.addEventListener("load", onLoad, { once: true });
-          });
+        // ── Entrance: fade in the sticky scene on load ──
+        const scene = document.querySelector(".sticky-scene");
+        if (scene) {
+          gsap.fromTo(scene, { opacity: 0 }, { opacity: 1, duration: 0.8, ease: "power2.out" });
         }
 
-        return () => {
-          window.removeEventListener("resize", handleResize);
-        };
+        // Refresh on resize
+        window.addEventListener("resize", () => {
+          ScrollTrigger.refresh();
+          const bikeW = bike.offsetWidth || 220;
+          // Re-place bike relative to current scroll progress
+          const st = ScrollTrigger.getAll()[0];
+          if (st) {
+            const p = st.progress;
+            const frac = roadStart + p * (roadEnd - roadStart);
+            bike.style.left = (window.innerWidth * frac - bikeW / 2) + "px";
+          }
+        }, { passive: true });
       });
     };
 
-    initGsap();
+    init();
 
     return () => {
       cancelled = true;
-      if (gsapCtxRef.current) {
-        gsapCtxRef.current.revert();
-        gsapCtxRef.current = null;
-      }
+      if (ctx) ctx.revert();
     };
   }, []);
 
   return (
-    <main id="main-content" style={{ background: "var(--bg-primary)" }}>
-      <RacingHero
-        sectionRef={sectionRef}
-        stickyRef={stickyRef}
-        trackRef={trackRef}
-        bikeRef={bikeRef}
-        pathRef={pathRef}
-        racingLineRef={racingLineRef}
-        finishRef={finishRef}
-        heroTextRef={heroTextRef}
-        statsRef={statsRef}
-        scrollIndicatorRef={scrollIndicatorRef}
-        setCheckpointRef={setCheckpointRef}
-      />
+    <>
+      {/* ══════════════════════════════════════════
+          SCROLL DRIVER — 500vh, gives ST its range
+          Page itself does NOT scroll visually
+      ══════════════════════════════════════════ */}
+      <div className="scroll-driver" aria-hidden="true" />
 
-      {/* RACE WON finish overlay — fixed overlay, revealed at end of scroll */}
-      <FinishOverlay finishRef={finishRef} />
+      {/* ══════════════════════════════════════════
+          STICKY SCENE — stays at top:0 always
+      ══════════════════════════════════════════ */}
+      <div className="sticky-scene" style={{ position: "fixed", top: 0, left: 0 }}>
 
-      {/* ─── POST-RACE CONTENT ─── */}
-      <section
-        id="post-race"
-        className="relative py-24 px-6 md:px-10 racing-grid"
-        style={{
-          background: "var(--bg-secondary)",
-          borderTop: "1px solid rgba(232,16,42,0.2)",
-        }}
-        aria-labelledby="post-race-heading"
-      >
-        <div className="max-w-4xl mx-auto text-center">
-          {/* Section badge */}
-          <div
-            className="inline-flex items-center gap-3 mb-8 px-4 py-2 rounded-full"
-            style={{
-              background: "rgba(232,16,42,0.08)",
-              border: "1px solid rgba(232,16,42,0.2)",
-            }}
-          >
-            <div
-              className="w-1.5 h-1.5 rounded-full"
-              style={{ background: "#e8102a", boxShadow: "0 0 6px #e8102a" }}
-            />
-            <span
-              className="text-xs tracking-widest uppercase"
-              style={{ color: "#e8102a", fontFamily: "Orbitron, sans-serif" }}
-            >
-              Season Summary
-            </span>
+        {/* ── Header ── */}
+        <header className="site-header">
+          <div className="brand-badge">
+            <div className="brand-dot" />
+            <span className="brand-label">ITZ FIZZ Racing Division</span>
           </div>
+          <span className="race-status">Race Mode Active</span>
+        </header>
 
-          <h2
-            id="post-race-heading"
-            className="font-orbitron font-bold uppercase mb-6"
-            style={{
-              fontSize: "clamp(1.8rem, 4vw, 3.5rem)",
-              color: "white",
-              letterSpacing: "-0.02em",
-            }}
-          >
-            The Road Ahead
-          </h2>
-
-          <p
-            className="text-base md:text-lg leading-relaxed mx-auto mb-12"
-            style={{
-              color: "var(--text-secondary)",
-              maxWidth: "600px",
-              fontFamily: "Inter, sans-serif",
-            }}
-          >
-            ITZ FIZZ continues to push the boundaries of delivery performance.
-            The statistics speak for themselves — smarter pick-up solutions,
-            fewer support calls, and a race to the top that&apos;s just getting
-            started.
-          </p>
-
-          {/* Stats recap */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { v: "58%", d: "Increase in pick up point use" },
-              { v: "23%", d: "Decreased customer phone calls" },
-              { v: "27%", d: "Increase in pick up point use" },
-              { v: "40%", d: "Decreased customer phone calls" },
-            ].map((s, i) => (
-              <div
-                key={i}
-                className="p-5 rounded-xl"
-                style={{
-                  background: "rgba(255,255,255,0.03)",
-                  border: "1px solid rgba(255,255,255,0.07)",
-                }}
-              >
-                <div
-                  className="font-orbitron font-bold mb-2"
-                  style={{
-                    fontSize: "2rem",
-                    color: i % 2 === 0 ? "#e8102a" : "white",
-                  }}
-                >
-                  {s.v}
-                </div>
-                <p
-                  className="text-xs leading-snug"
-                  style={{
-                    color: "var(--text-muted)",
-                    fontFamily: "Inter, sans-serif",
-                  }}
-                >
-                  {s.d}
-                </p>
-              </div>
-            ))}
-          </div>
+        {/* ── Hero headline ── */}
+        <div className="hero-area">
+          <h1 className="welcome-headline" aria-label="Welcome ITZ FIZZ">
+            W&nbsp;E&nbsp;L&nbsp;C&nbsp;O&nbsp;M&nbsp;E&nbsp;&nbsp;
+            <span className="accent">I&nbsp;T&nbsp;Z&nbsp;</span>
+            <span className="accent">F&nbsp;I&nbsp;Z&nbsp;Z</span>
+          </h1>
+          <p className="subtitle">Scroll to race &nbsp;/&nbsp; ITZ FIZZ Racing Division</p>
         </div>
-      </section>
 
-      {/* ─── FOOTER ─── */}
-      <footer
-        className="py-8 px-6 md:px-10"
-        style={{
-          background: "var(--bg-primary)",
-          borderTop: "1px solid var(--border-subtle)",
-        }}
-        role="contentinfo"
-      >
-        <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
-          {/* Brand */}
-          <div className="flex items-center gap-3">
-            <div
-              className="w-7 h-7 rounded flex items-center justify-center"
-              style={{ background: "#e8102a" }}
-            >
-              <span
-                style={{
-                  color: "white",
-                  fontSize: "9px",
-                  fontWeight: 900,
-                  fontFamily: "Orbitron, sans-serif",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                IF
-              </span>
+        {/* ── Road area ── */}
+        <div className="road-wrapper">
+
+          {/* The road surface */}
+          <div className="road">
+            {/* Animated red progress trail */}
+            <div className="road-trail" ref={trailRef} />
+            {/* Centre dashed racing line */}
+            <div className="road-center-line" />
+
+            {/* Checkpoint markers */}
+            <div className="checkpoint" ref={cp1Ref} data-label="CP 01"
+              style={{ left: "25%" }} />
+            <div className="checkpoint" ref={cp2Ref} data-label="CP 02"
+              style={{ left: "50%" }} />
+            <div className="checkpoint" ref={cp3Ref} data-label="CP 03"
+              style={{ left: "75%" }} />
+
+            {/* Start flag */}
+            <div className="flag-marker" style={{ left: "2%" }}>
+              <div className="flag-checkered" style={{ width: 30, height: 20 }} />
+              <div className="flag-pole" style={{ height: 36 }} />
+              <span className="flag-label">Start</span>
             </div>
-            <span
-              className="text-sm font-medium"
-              style={{
-                color: "var(--text-muted)",
-                fontFamily: "Orbitron, sans-serif",
-                letterSpacing: "0.1em",
-              }}
-            >
-              ITZ FIZZ RACING DIVISION
-            </span>
+
+            {/* Finish flag */}
+            <div className="flag-marker" style={{ right: "2%" }}>
+              <div className="flag-checkered" style={{ width: 30, height: 20 }} />
+              <div className="flag-pole" style={{ height: 36 }} />
+              <span className="flag-label">Finish</span>
+            </div>
           </div>
-          {/* Copyright */}
-          <p
-            className="text-xs text-center sm:text-right"
+
+          {/* ── THE BIKE — absolutely positioned, GSAP moves `left` ── */}
+          <div
             style={{
-              color: "var(--text-muted)",
-              fontFamily: "Inter, sans-serif",
+              position: "absolute",
+              top: "50%",
+              transform: "translateY(-50%)",
+              left: 0,
+              zIndex: 20,
+              transition: "none",
+              pointerEvents: "none",
             }}
+            ref={bikeRef}
           >
-            © 2024 ITZ FIZZ. All rights reserved.
-            <br className="sm:hidden" />{" "}
-            Built with Next.js &amp; GSAP ScrollTrigger.
-          </p>
+            <Image
+              src="/images/racing-bike.jpg"
+              alt="ITZ FIZZ Racing Bike"
+              width={440}
+              height={248}
+              priority
+              style={{
+                height: "140px",
+                width: "auto",
+                display: "block",
+                filter: "drop-shadow(0 8px 24px rgba(232,16,42,0.3)) drop-shadow(0 2px 8px rgba(0,0,0,0.8))",
+              }}
+            />
+          </div>
+
+          {/* ══════════════════════════════════════
+              TEXT BOXES — positioned along the road
+              They fade in as the bike passes them
+          ══════════════════════════════════════ */}
+
+          {/* Box 0 — WELCOME headline (appears at very start, above road) */}
+          <div
+            ref={box0Ref}
+            className="text-box above"
+            style={{ left: "5%", opacity: 0, transform: "translateY(-10px)" }}
+          >
+            <div className="text-box-label">The Race Experience</div>
+            <div style={{ fontFamily: "Orbitron, sans-serif", fontWeight: 900, fontSize: "1.1rem", color: "white", lineHeight: 1.2, marginBottom: 4 }}>
+              WELCOME<br />
+              <span style={{ color: "#e8102a" }}>ITZ FIZZ</span>
+            </div>
+            <div className="text-box-desc">Scroll to race through the ITZ FIZZ experience</div>
+          </div>
+
+          {/* Box 1 — 58% (above road) */}
+          <div
+            ref={box1Ref}
+            className="text-box above"
+            style={{ left: "20%", opacity: 0, transform: "translateY(-10px)" }}
+          >
+            <div className="text-box-label">Impact Metric 01</div>
+            <div className="text-box-value">58%</div>
+            <div className="text-box-desc">Increase in pick up point use</div>
+          </div>
+
+          {/* Box 2 — 23% (below road) */}
+          <div
+            ref={box2Ref}
+            className="text-box below"
+            style={{ left: "37%", opacity: 0, transform: "translateY(10px)" }}
+          >
+            <div className="text-box-label">Impact Metric 02</div>
+            <div className="text-box-value" style={{ color: "#e8102a" }}>23%</div>
+            <div className="text-box-desc">Decreased in customer phone calls</div>
+          </div>
+
+          {/* Box 3 — 27% (above road) */}
+          <div
+            ref={box3Ref}
+            className="text-box above"
+            style={{ left: "54%", opacity: 0, transform: "translateY(-10px)" }}
+          >
+            <div className="text-box-label">Impact Metric 03</div>
+            <div className="text-box-value">27%</div>
+            <div className="text-box-desc">Increase in pick up point use</div>
+          </div>
+
+          {/* Box 4 — 40% (below road) */}
+          <div
+            ref={box4Ref}
+            className="text-box below"
+            style={{ left: "71%", opacity: 0, transform: "translateY(10px)" }}
+          >
+            <div className="text-box-label">Impact Metric 04</div>
+            <div className="text-box-value" style={{ color: "#e8102a" }}>40%</div>
+            <div className="text-box-desc">Decreased in customer phone calls</div>
+          </div>
+
+        </div>{/* end road-wrapper */}
+
+        {/* ── Scroll hint ── */}
+        <div className="scroll-hint">↓ &nbsp; Scroll to race &nbsp; ↓</div>
+
+      </div>{/* end sticky-scene */}
+
+      {/* ══════════════════════════════════════════
+          FINISH OVERLAY — fixed, revealed at end
+      ══════════════════════════════════════════ */}
+      <div
+        ref={finishRef}
+        className="finish-banner"
+        style={{ opacity: 0, pointerEvents: "none" }}
+        role="status"
+        aria-live="polite"
+      >
+        {/* Checkered flag icons */}
+        <div className="finish-flags">
+          <div className="finish-flag-icon" />
+          <div className="finish-flag-icon" />
         </div>
-      </footer>
-    </main>
+
+        <h2 className="finish-title">
+          RACE <span>WON</span>
+        </h2>
+
+        <p className="finish-sub">
+          Finish Line Crossed. ITZ FIZZ Takes The Lead.
+        </p>
+
+        <p className="finish-hint">Scroll up to race again</p>
+      </div>
+    </>
   );
 }

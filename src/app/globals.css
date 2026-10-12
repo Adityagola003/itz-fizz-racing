@@ -1,21 +1,5 @@
 @import "tailwindcss";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Rajdhani:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
-
-:root {
-  --bg-primary: #0a0a0b;
-  --bg-secondary: #111114;
-  --bg-card: #16161a;
-  --accent-red: #e8102a;
-  --accent-red-dark: #b00d1f;
-  --accent-red-glow: rgba(232, 16, 42, 0.3);
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
-  --border-subtle: rgba(255, 255, 255, 0.08);
-  --track-color: rgba(255, 255, 255, 0.15);
-  --checkpoint-inactive: #2a2a30;
-  --checkpoint-active: #e8102a;
-}
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Inter:wght@400;500;600&display=swap');
 
 * {
   margin: 0;
@@ -23,142 +7,369 @@
   box-sizing: border-box;
 }
 
-html {
-  scroll-behavior: auto;
-  overflow-x: hidden;
+html, body {
+  overflow: hidden; /* NO PAGE SCROLL — only the bike moves */
+  height: 100%;
+  width: 100%;
 }
 
 body {
-  background-color: var(--bg-primary);
-  color: var(--text-primary);
-  font-family: 'Inter', 'Rajdhani', sans-serif;
-  overflow-x: hidden;
+  background: #121212;
+  color: white;
+  font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
 }
 
-/* Typography */
-.font-orbitron { font-family: 'Orbitron', sans-serif; }
-.font-rajdhani { font-family: 'Rajdhani', sans-serif; }
-.font-inter { font-family: 'Inter', sans-serif; }
-
-/* Scrollbar */
-::-webkit-scrollbar { width: 4px; }
-::-webkit-scrollbar-track { background: var(--bg-primary); }
-::-webkit-scrollbar-thumb { background: var(--accent-red); border-radius: 2px; }
-
-/* Racing grid texture */
-.racing-grid {
-  background-image:
-    linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
-  background-size: 60px 60px;
+/* The outer scroll container — 500vh tall so ScrollTrigger has room */
+.scroll-driver {
+  height: 500vh;
+  position: relative;
 }
 
-/* Track texture */
-.track-texture {
-  background-image: repeating-linear-gradient(
+/* The sticky viewport — locks in place while scroll drives the bike */
+.sticky-scene {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: #121212;
+}
+
+/* ── HEADER ── */
+.site-header {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px 0;
+  z-index: 10;
+}
+
+.brand-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e8102a;
+  box-shadow: 0 0 8px #e8102a;
+}
+
+.brand-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #666;
+  text-transform: uppercase;
+}
+
+.race-status {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 10px;
+  color: #555;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+/* ── HERO HEADLINE AREA ── */
+.hero-area {
+  flex-shrink: 0;
+  padding: 24px 32px 0;
+  z-index: 10;
+}
+
+.welcome-headline {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(1.8rem, 5vw, 4.5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+  color: white;
+}
+
+.welcome-headline .accent {
+  color: #e8102a;
+}
+
+.subtitle {
+  margin-top: 8px;
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: #555;
+  text-transform: uppercase;
+}
+
+/* ── ROAD / TRACK AREA ── */
+.road-wrapper {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* The actual road strip */
+.road {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 180px;
+  background: #1a1a1a;
+  border-top: 2px solid #2a2a2a;
+  border-bottom: 2px solid #2a2a2a;
+}
+
+/* Road texture stripes */
+.road::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
     90deg,
-    transparent,
-    transparent 20px,
-    rgba(255,255,255,0.015) 20px,
-    rgba(255,255,255,0.015) 21px
+    transparent 0px,
+    transparent 40px,
+    rgba(255,255,255,0.015) 40px,
+    rgba(255,255,255,0.015) 41px
   );
 }
 
-/* Noise overlay */
-.noise::after {
-  content: '';
+/* Dashed centre line */
+.road-center-line {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  right: 0;
+  height: 3px;
+  transform: translateY(-50%);
+  background: repeating-linear-gradient(
+    90deg,
+    #e8102a 0px,
+    #e8102a 40px,
+    transparent 40px,
+    transparent 80px
+  );
+  opacity: 0.6;
+}
+
+/* Animated progress trail (fills from left as bike moves) */
+.road-trail {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 0%; /* driven by GSAP */
+  background: rgba(232, 16, 42, 0.08);
+  border-right: 2px solid rgba(232, 16, 42, 0.4);
+  transition: none;
+}
+
+/* ── BIKE ── */
+.bike {
+  position: absolute;
+  height: 140px;
+  width: auto;
+  left: 0; /* GSAP moves this */
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 20;
+  pointer-events: none;
+  filter: drop-shadow(0 8px 24px rgba(232, 16, 42, 0.25)) drop-shadow(0 2px 6px rgba(0,0,0,0.7));
+}
+
+/* Bike ground shadow */
+.bike-shadow-el {
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70%;
+  height: 6px;
+  background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
+  filter: blur(3px);
+  z-index: 19;
+  pointer-events: none;
+}
+
+/* ── TEXT BOXES ── */
+.text-box {
+  position: absolute;
+  opacity: 0;
+  padding: 16px 20px;
+  border-radius: 8px;
+  background: rgba(18, 18, 18, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(8px);
+  min-width: 180px;
+  max-width: 220px;
+  z-index: 15;
+  pointer-events: none;
+}
+
+.text-box.above { bottom: calc(50% + 105px); }
+.text-box.below { top: calc(50% + 105px); }
+
+.text-box-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #e8102a;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.text-box-value {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 2.2rem;
+  font-weight: 900;
+  line-height: 1;
+  color: white;
+  margin-bottom: 4px;
+}
+
+.text-box-desc {
+  font-size: 11px;
+  color: #888;
+  line-height: 1.4;
+}
+
+/* Start / finish flags */
+.flag-marker {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  z-index: 12;
+}
+
+.flag-pole {
+  width: 2px;
+  height: 50px;
+  background: white;
+}
+
+.flag-checkered {
+  width: 40px;
+  height: 26px;
+  background: repeating-conic-gradient(#fff 0% 25%, #111 0% 50%) 0 0 / 10px 10px;
+}
+
+.flag-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.15em;
+  color: #666;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* ── BOTTOM SCROLL INDICATOR ── */
+.scroll-hint {
+  flex-shrink: 0;
+  text-align: center;
+  padding: 12px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  letter-spacing: 0.2em;
+  color: #444;
+  text-transform: uppercase;
+}
+
+/* ── FINISH STATE ── */
+.finish-banner {
   position: fixed;
   inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  background: rgba(10, 10, 10, 0.95);
+  opacity: 0;
   pointer-events: none;
-  z-index: 9999;
-  opacity: 0.4;
+  text-align: center;
 }
 
-/* Checkpoint pulse animation */
-@keyframes checkpoint-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 var(--accent-red-glow); }
-  50% { box-shadow: 0 0 0 12px transparent; }
+.finish-flags {
+  display: flex;
+  gap: 24px;
+  margin-bottom: 24px;
 }
 
-.checkpoint-active {
-  animation: checkpoint-pulse 1.5s ease-out;
+.finish-flag-icon {
+  width: 60px;
+  height: 40px;
+  background: repeating-conic-gradient(#fff 0% 25%, #111 0% 50%) 0 0 / 10px 10px;
 }
 
-/* Scroll indicator bounce */
-@keyframes scroll-bounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(8px); }
+.finish-title {
+  font-family: 'Orbitron', sans-serif;
+  font-weight: 900;
+  font-size: clamp(3rem, 10vw, 8rem);
+  text-transform: uppercase;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: white;
+  margin-bottom: 12px;
 }
 
-.scroll-bounce {
-  animation: scroll-bounce 2s ease-in-out infinite;
+.finish-title span {
+  color: #e8102a;
 }
 
-/* Finish celebration */
-@keyframes flag-wave {
-  0%, 100% { transform: skewX(0deg); }
-  25% { transform: skewX(-3deg); }
-  75% { transform: skewX(3deg); }
+.finish-sub {
+  font-family: 'Orbitron', sans-serif;
+  font-size: clamp(0.6rem, 1.5vw, 0.85rem);
+  letter-spacing: 0.2em;
+  color: rgba(255,255,255,0.6);
+  text-transform: uppercase;
+  margin-bottom: 20px;
 }
 
-.flag-wave {
-  animation: flag-wave 0.6s ease-in-out infinite;
+.finish-hint {
+  font-size: 12px;
+  color: #555;
+  font-family: 'Inter', sans-serif;
 }
 
-/* Racing stripe */
-.racing-stripe {
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--accent-red),
-    var(--accent-red) 8px,
-    transparent 8px,
-    transparent 16px
-  );
+/* Checkpoint markers on road */
+.checkpoint {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255,255,255,0.1);
+  z-index: 8;
 }
 
-/* Stat counter glow */
-.stat-glow {
-  text-shadow: 0 0 40px var(--accent-red-glow);
+.checkpoint::after {
+  content: attr(data-label);
+  position: absolute;
+  bottom: 8px;
+  left: 6px;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 7px;
+  letter-spacing: 0.15em;
+  color: rgba(255,255,255,0.2);
+  text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* Bike shadow */
-.bike-shadow {
-  filter: drop-shadow(0 20px 40px rgba(232, 16, 42, 0.2)) drop-shadow(0 4px 8px rgba(0,0,0,0.6));
+.checkpoint.active {
+  background: rgba(232, 16, 42, 0.4);
+  box-shadow: 0 0 12px rgba(232, 16, 42, 0.3);
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-  }
-  .scroll-bounce { animation: none; }
-  .flag-wave { animation: none; }
-}
-
-/* Prevent horizontal overflow */
-.race-section {
-  overflow-x: hidden;
-  position: relative;
-}
-
-/* Finish line stripes */
-.finish-stripes {
-  background: repeating-linear-gradient(
-    90deg,
-    #fff 0px,
-    #fff 20px,
-    #000 20px,
-    #000 40px
-  );
-}
-
-/* Glow line */
-.glow-line {
-  background: linear-gradient(90deg, transparent, var(--accent-red), transparent);
-  box-shadow: 0 0 20px var(--accent-red-glow);
+  .bike { transition: none !important; }
 }
