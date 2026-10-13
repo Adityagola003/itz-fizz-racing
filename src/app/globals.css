@@ -7,369 +7,492 @@
   box-sizing: border-box;
 }
 
-html, body {
-  overflow: hidden; /* NO PAGE SCROLL — only the bike moves */
-  height: 100%;
-  width: 100%;
+/* Body is tall so the window can scroll — scene is fixed so it never moves visually */
+html {
+  overflow-x: hidden;
 }
 
 body {
-  background: #121212;
+  background: #111;
   color: white;
   font-family: 'Inter', sans-serif;
   -webkit-font-smoothing: antialiased;
+  /* height is set via JS to 500vh — controlled in page.jsx */
 }
 
-/* The outer scroll container — 500vh tall so ScrollTrigger has room */
-.scroll-driver {
-  height: 500vh;
-  position: relative;
-}
-
-/* The sticky viewport — locks in place while scroll drives the bike */
-.sticky-scene {
-  position: sticky;
-  top: 0;
-  height: 100vh;
+/* ── FIXED FULL-SCREEN SCENE ── */
+.scene {
+  position: fixed;
+  inset: 0;
   width: 100vw;
+  height: 100vh;
+  background: #0e0e0e;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #121212;
+}
+
+/* Subtle grid texture */
+.scene::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px);
+  background-size: 50px 50px;
+  pointer-events: none;
 }
 
 /* ── HEADER ── */
-.site-header {
-  flex-shrink: 0;
+.header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 20px 32px 0;
-  z-index: 10;
+  padding: 20px 28px;
+  z-index: 40;
 }
 
-.brand-badge {
+.brand {
   display: flex;
   align-items: center;
   gap: 10px;
 }
 
-.brand-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.brand-icon {
+  width: 28px;
+  height: 28px;
   background: #e8102a;
-  box-shadow: 0 0 8px #e8102a;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 9px;
+  font-weight: 900;
+  color: white;
+  letter-spacing: 0.5px;
 }
 
-.brand-label {
+.brand-name {
   font-family: 'Orbitron', sans-serif;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  color: #666;
+  font-size: 10px;
+  letter-spacing: 0.25em;
+  color: #555;
   text-transform: uppercase;
 }
 
-.race-status {
+.live-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 5px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.07);
+  background: rgba(255,255,255,0.03);
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #e8102a;
+  box-shadow: 0 0 8px #e8102a;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.live-text {
   font-family: 'Orbitron', sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   color: #555;
   letter-spacing: 0.15em;
   text-transform: uppercase;
 }
 
-/* ── HERO HEADLINE AREA ── */
-.hero-area {
+/* ── TRACK COLUMN (centered vertical road) ── */
+.track-area {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: stretch;
+}
+
+.road-strip {
+  width: 90px;
+  background: #1a1a1a;
+  position: relative;
+  border-left: 2px solid #252525;
+  border-right: 2px solid #252525;
   flex-shrink: 0;
-  padding: 24px 32px 0;
-  z-index: 10;
+}
+
+/* Moving dashed centre line — animates upward */
+.road-dashes {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.dash-line {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  top: 0;
+  bottom: 0;
+  /* Repeating dash drawn with gradient */
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(232,16,42,0.5) 0px,
+    rgba(232,16,42,0.5) 24px,
+    transparent 24px,
+    transparent 48px
+  );
+}
+
+/* The animated dash scroll */
+.dash-inner {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 3px;
+  height: 200%;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(232,16,42,0.7) 0px,
+    rgba(232,16,42,0.7) 24px,
+    transparent 24px,
+    transparent 48px
+  );
+  /* GSAP animates translateY here */
+}
+
+/* Road edge accent lines */
+.road-edge-left {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 8px;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.12) 0px,
+    rgba(255,255,255,0.12) 12px,
+    transparent 12px,
+    transparent 24px
+  );
+}
+
+.road-edge-right {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 8px;
+  width: 1px;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(255,255,255,0.12) 0px,
+    rgba(255,255,255,0.12) 12px,
+    transparent 12px,
+    transparent 24px
+  );
+}
+
+/* Red trail left BEHIND the bike (above it since bike moves downward) */
+.trail-behind {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0%; /* GSAP sets this = bike's top position */
+  background: linear-gradient(to bottom, rgba(232,16,42,0.0), rgba(232,16,42,0.15));
+  transition: none;
+}
+
+/* ── THE BIKE ── */
+.bike-container {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 70px;
+  z-index: 30;
+  pointer-events: none;
+  /* GSAP sets `top` */
+}
+
+.bike-img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 4px 20px rgba(232,16,42,0.4)) drop-shadow(0 2px 6px rgba(0,0,0,0.8));
+}
+
+/* Glow under bike */
+.bike-glow {
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 60px;
+  height: 16px;
+  border-radius: 50%;
+  background: rgba(232,16,42,0.4);
+  filter: blur(10px);
+}
+
+/* ── CHECKPOINT BANDS across the road ── */
+.checkpoint-band {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: rgba(255,255,255,0.08);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+}
+
+.checkpoint-band.active {
+  background: rgba(232,16,42,0.5);
+  box-shadow: 0 0 10px rgba(232,16,42,0.3);
+}
+
+/* ── CONTENT PANELS ── */
+/* Text panels appear left / right of the track as the bike passes */
+.content-panel {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+  max-width: 240px;
+  transition: none;
+  /* transform set initially by GSAP */
+}
+
+.content-panel.left  { right: calc(50% + 65px); text-align: right; }
+.content-panel.right { left:  calc(50% + 65px); text-align: left;  }
+
+/* Welcome panel — large, at top */
+.welcome-panel {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  text-align: center;
+  opacity: 0;
+  pointer-events: none;
+  width: max-content;
+  max-width: 90vw;
 }
 
 .welcome-headline {
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
-  font-size: clamp(1.8rem, 5vw, 4.5rem);
-  line-height: 1;
+  font-size: clamp(2.4rem, 6vw, 6rem);
+  line-height: 0.95;
   letter-spacing: -0.02em;
   text-transform: uppercase;
   color: white;
 }
 
-.welcome-headline .accent {
-  color: #e8102a;
-}
+.welcome-headline .red { color: #e8102a; }
 
-.subtitle {
-  margin-top: 8px;
-  font-size: 11px;
-  letter-spacing: 0.2em;
-  color: #555;
-  text-transform: uppercase;
-}
-
-/* ── ROAD / TRACK AREA ── */
-.road-wrapper {
-  flex: 1;
-  position: relative;
-  display: flex;
-  align-items: center;
-}
-
-/* The actual road strip */
-.road {
-  position: absolute;
-  left: 0;
-  right: 0;
-  height: 180px;
-  background: #1a1a1a;
-  border-top: 2px solid #2a2a2a;
-  border-bottom: 2px solid #2a2a2a;
-}
-
-/* Road texture stripes */
-.road::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: repeating-linear-gradient(
-    90deg,
-    transparent 0px,
-    transparent 40px,
-    rgba(255,255,255,0.015) 40px,
-    rgba(255,255,255,0.015) 41px
-  );
-}
-
-/* Dashed centre line */
-.road-center-line {
-  position: absolute;
-  top: 50%;
-  left: 0;
-  right: 0;
-  height: 3px;
-  transform: translateY(-50%);
-  background: repeating-linear-gradient(
-    90deg,
-    #e8102a 0px,
-    #e8102a 40px,
-    transparent 40px,
-    transparent 80px
-  );
-  opacity: 0.6;
-}
-
-/* Animated progress trail (fills from left as bike moves) */
-.road-trail {
-  position: absolute;
-  top: 0;
-  left: 0;
-  bottom: 0;
-  width: 0%; /* driven by GSAP */
-  background: rgba(232, 16, 42, 0.08);
-  border-right: 2px solid rgba(232, 16, 42, 0.4);
-  transition: none;
-}
-
-/* ── BIKE ── */
-.bike {
-  position: absolute;
-  height: 140px;
-  width: auto;
-  left: 0; /* GSAP moves this */
-  top: 50%;
-  transform: translateY(-50%);
-  z-index: 20;
-  pointer-events: none;
-  filter: drop-shadow(0 8px 24px rgba(232, 16, 42, 0.25)) drop-shadow(0 2px 6px rgba(0,0,0,0.7));
-}
-
-/* Bike ground shadow */
-.bike-shadow-el {
-  position: absolute;
-  bottom: -4px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 70%;
-  height: 6px;
-  background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
-  filter: blur(3px);
-  z-index: 19;
-  pointer-events: none;
-}
-
-/* ── TEXT BOXES ── */
-.text-box {
-  position: absolute;
-  opacity: 0;
-  padding: 16px 20px;
-  border-radius: 8px;
-  background: rgba(18, 18, 18, 0.9);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(8px);
-  min-width: 180px;
-  max-width: 220px;
-  z-index: 15;
-  pointer-events: none;
-}
-
-.text-box.above { bottom: calc(50% + 105px); }
-.text-box.below { top: calc(50% + 105px); }
-
-.text-box-label {
+.welcome-tagline {
+  margin-top: 10px;
   font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
-  letter-spacing: 0.2em;
-  color: #e8102a;
+  font-size: 11px;
+  letter-spacing: 0.25em;
+  color: rgba(255,255,255,0.3);
   text-transform: uppercase;
+}
+
+/* Stat panel styles */
+.panel-label {
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: #e8102a;
   margin-bottom: 6px;
 }
 
-.text-box-value {
+.panel-value {
   font-family: 'Orbitron', sans-serif;
-  font-size: 2.2rem;
   font-weight: 900;
+  font-size: clamp(2.2rem, 4vw, 3.5rem);
   line-height: 1;
   color: white;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
-.text-box-desc {
-  font-size: 11px;
-  color: #888;
+.panel-desc {
+  font-size: 12px;
+  color: #666;
   line-height: 1.4;
+  max-width: 200px;
 }
 
-/* Start / finish flags */
-.flag-marker {
+/* Connector line from panel to track */
+.connector {
   position: absolute;
   top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  z-index: 12;
+  height: 1px;
+  background: rgba(255,255,255,0.1);
 }
 
-.flag-pole {
-  width: 2px;
-  height: 50px;
-  background: white;
+.content-panel.left  .connector { right: -30px; width: 25px; }
+.content-panel.right .connector { left: -30px; width: 25px; }
+
+/* ── START / FINISH ── */
+.start-line,
+.finish-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 4px;
+  z-index: 6;
 }
 
-.flag-checkered {
-  width: 40px;
-  height: 26px;
-  background: repeating-conic-gradient(#fff 0% 25%, #111 0% 50%) 0 0 / 10px 10px;
+.start-line {
+  top: 8%;
+  background: rgba(255,255,255,0.15);
 }
 
-.flag-label {
+.finish-line {
+  bottom: 8%;
+  background: repeating-linear-gradient(90deg, #fff 0px, #fff 9px, #111 9px, #111 18px);
+  opacity: 0.5;
+}
+
+.finish-label {
+  position: absolute;
+  bottom: calc(8% + 8px);
+  left: 50%;
+  transform: translateX(-50%);
   font-family: 'Orbitron', sans-serif;
   font-size: 8px;
-  letter-spacing: 0.15em;
-  color: #666;
-  text-transform: uppercase;
-  margin-top: 4px;
-}
-
-/* ── BOTTOM SCROLL INDICATOR ── */
-.scroll-hint {
-  flex-shrink: 0;
-  text-align: center;
-  padding: 12px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px;
   letter-spacing: 0.2em;
-  color: #444;
+  color: rgba(255,255,255,0.25);
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
-/* ── FINISH STATE ── */
-.finish-banner {
+/* ── SCROLL HINT ── */
+.scroll-hint {
+  position: absolute;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-family: 'Orbitron', sans-serif;
+  font-size: 8px;
+  letter-spacing: 0.25em;
+  color: #333;
+  text-transform: uppercase;
+  z-index: 40;
+  white-space: nowrap;
+}
+
+.scroll-arrow {
+  display: inline-block;
+  animation: bob 1.8s ease-in-out infinite;
+}
+
+@keyframes bob {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(5px); }
+}
+
+/* ── PROGRESS BAR (right side) ── */
+.progress-bar {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 2px;
+  height: 120px;
+  background: rgba(255,255,255,0.05);
+  border-radius: 2px;
+  z-index: 40;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 0%;
+  background: #e8102a;
+  border-radius: 2px;
+  box-shadow: 0 0 6px #e8102a;
+}
+
+/* ── FINISH OVERLAY ── */
+.finish-overlay {
   position: fixed;
   inset: 0;
-  z-index: 100;
+  z-index: 200;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
-  background: rgba(10, 10, 10, 0.95);
+  background: rgba(8, 8, 8, 0.96);
   opacity: 0;
   pointer-events: none;
   text-align: center;
+  padding: 24px;
 }
 
 .finish-flags {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   margin-bottom: 24px;
 }
 
-.finish-flag-icon {
-  width: 60px;
-  height: 40px;
-  background: repeating-conic-gradient(#fff 0% 25%, #111 0% 50%) 0 0 / 10px 10px;
+.flag {
+  width: 56px;
+  height: 36px;
+  background: repeating-conic-gradient(#fff 0% 25%, #111 0% 50%) 0 0 / 9px 9px;
+  border-radius: 2px;
 }
 
 .finish-title {
   font-family: 'Orbitron', sans-serif;
   font-weight: 900;
-  font-size: clamp(3rem, 10vw, 8rem);
+  font-size: clamp(3rem, 12vw, 9rem);
+  line-height: 0.9;
   text-transform: uppercase;
   letter-spacing: -0.02em;
-  line-height: 1;
   color: white;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
 }
 
-.finish-title span {
-  color: #e8102a;
-}
+.finish-title .red { color: #e8102a; }
 
 .finish-sub {
   font-family: 'Orbitron', sans-serif;
-  font-size: clamp(0.6rem, 1.5vw, 0.85rem);
-  letter-spacing: 0.2em;
-  color: rgba(255,255,255,0.6);
+  font-size: clamp(0.55rem, 1.5vw, 0.8rem);
+  letter-spacing: 0.22em;
+  color: rgba(255,255,255,0.45);
   text-transform: uppercase;
-  margin-bottom: 20px;
+  margin-bottom: 28px;
 }
 
 .finish-hint {
   font-size: 12px;
-  color: #555;
-  font-family: 'Inter', sans-serif;
-}
-
-/* Checkpoint markers on road */
-.checkpoint {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 2px;
-  background: rgba(255,255,255,0.1);
-  z-index: 8;
-}
-
-.checkpoint::after {
-  content: attr(data-label);
-  position: absolute;
-  bottom: 8px;
-  left: 6px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 7px;
-  letter-spacing: 0.15em;
-  color: rgba(255,255,255,0.2);
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-
-.checkpoint.active {
-  background: rgba(232, 16, 42, 0.4);
-  box-shadow: 0 0 12px rgba(232, 16, 42, 0.3);
+  color: #444;
 }
 
 /* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .bike { transition: none !important; }
+  .scroll-arrow { animation: none; }
+  .live-dot     { animation: none; }
 }
