@@ -228,6 +228,8 @@ body {
   width: 70px;
   z-index: 30;
   pointer-events: none;
+  /* Glow is on the container (outside blend context) so it renders correctly */
+  filter: drop-shadow(0 0 16px rgba(232,16,42,0.55)) drop-shadow(0 0 4px rgba(232,16,42,0.3));
   /* GSAP sets `top` */
 }
 
@@ -235,9 +237,14 @@ body {
   width: 100%;
   height: auto;
   display: block;
-  /* screen blend mode: black pixels become invisible, colored bike parts show through */
+  /*
+   * How the background disappears:
+   * 1. contrast(6) crushes ALL near-black/dark pixels to absolute black (0,0,0)
+   * 2. mix-blend-mode:screen then makes black perfectly transparent on the dark scene
+   * 3. The bike's red/white/grey parts survive and render correctly
+   */
+  filter: contrast(6) saturate(1.15);
   mix-blend-mode: screen;
-  filter: drop-shadow(0 0 18px rgba(232,16,42,0.5));
 }
 
 /* Glow under bike */
