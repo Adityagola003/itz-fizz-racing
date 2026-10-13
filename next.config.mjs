@@ -7,6 +7,7 @@ const nextConfig = {
     unoptimized: true,
   },
   trailingSlash: true,
+  devIndicators: false, // removes the floating "N" Next.js dev overlay
 };
 
 export default nextConfig;
