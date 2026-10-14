@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Image from "next/image";
+import bikeImg from "../../public/images/bike-topdown.jpg";
 
 /**
  * ITZ FIZZ — The Race Experience (v4)
@@ -236,7 +237,7 @@ export default function Home() {
             aria-label="ITZ FIZZ racing bike"
           >
             <Image
-              src="/images/bike-topdown.jpg"
+              src={bikeImg}
               alt="ITZ FIZZ Racing Superbike — top-down view"
               width={280}
               height={280}
