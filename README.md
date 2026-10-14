@@ -1,57 +1,24 @@
 # ITZ FIZZ — The Race Experience 🏍️
 
-A premium scroll-driven motorcycle racing experience built with **Next.js**, **GSAP ScrollTrigger**, and **Tailwind CSS**.
-
-[![Deploy](https://github.com/YOUR_USERNAME/itz-fizz-racing/actions/workflows/deploy.yml/badge.svg)](https://github.com/YOUR_USERNAME/itz-fizz-racing/actions/workflows/deploy.yml)
+A premium scroll-driven motorcycle racing experience inspired by reference track animations, built with **Next.js**, **GSAP ScrollTrigger**, and modern CSS.
 
 ---
 
 ## 🌐 Live Demo
 
-> **[https://YOUR_USERNAME.github.io/itz-fizz-racing/](https://YOUR_USERNAME.github.io/itz-fizz-racing/)**
+> **`https://<YOUR_GITHUB_USERNAME>.github.io/itz-fizz-racing/`**
 
 ---
 
 ## ✨ Features
 
-- **Scroll-driven racing** — the bike follows an SVG racing circuit in direct sync with scroll progress
-- **Cinematic entrance animation** — staggered character reveal, bike fade-in, stat counters
-- **Three checkpoints** — activate as the bike passes each marker on the track
-- **Finish-line celebration** — RACE WON state with checkered flags at scroll completion
-- **Fully reversible** — scroll back up and the bike retreats, checkpoints deactivate
-- **Responsive** — works on desktop, tablet, and mobile
-- **Reduced-motion support** — static fallback for `prefers-reduced-motion` users
-
----
-
-## 🏁 Racing Line Implementation
-
-The circuit is drawn as a single SVG `<path>` element using cubic Bézier curves (viewBox 800×500). The path traces a flowing S-curve circuit from the starting grid through three checkpoint zones to the finish line.
-
-### Bike Path Following
-
-- **`path.getTotalLength()`** — gets total path length on mount
-- **`path.getPointAtLength(progress * totalLength)`** — returns `{x, y}` at any scroll fraction
-- **Tangent angle** — computed from two points `±3px` along the path via `Math.atan2`, clamped to ±30°
-- **SVG→screen coordinate conversion** — `svgEl.getBoundingClientRect()` converts viewBox coordinates to actual screen pixels accounting for responsive scaling
-- **`gsap.set(bike, { x, y, rotation })`** — applied inside a `ScrollTrigger.onUpdate` callback with `scrub: 1.5` for smooth lag
-
-### Racing Line Draw
-
-- `strokeDasharray = pathLength` + `strokeDashoffset = pathLength * (1 - progress)` creates the drawing effect
-- Updated via `gsap.set()` on every scroll tick
-
-### ScrollTrigger Configuration
-
-```js
-ScrollTrigger.create({
-  trigger: section,
-  start: "top top",
-  end: "bottom bottom",
-  scrub: 1.5,         // lag factor for smooth trailing
-  onUpdate: (self) => { /* bike position, line draw, checkpoints */ }
-});
-```
+- **Fixed-View Scroll Racing** — The viewport remains fixed while natural window scrolling drives the bike down a vertical racing track.
+- **Top-Down Superbike** — High-performance red/black sports motorcycle moving with precision throttle dynamics.
+- **Dynamic Red Trail** — Illuminated red speed trail drawn on the track surface directly behind the bike.
+- **Passing Stat Reveals** — Impact statistics slide in alternately from left and right as the bike cruises past each checkpoint.
+- **Checkered Finish Celebration** — Complete RACE WON overlay with animated checkered flags upon crossing the finish line.
+- **Bi-directional Scrubbing** — Fully reversible; scrolling back up rewinds the bike, trail, and stat panels smoothly.
+- **Responsive & Accessible** — Scales across mobile, tablet, and ultra-wide screens with full contrast optimization.
 
 ---
 
@@ -59,10 +26,10 @@ ScrollTrigger.create({
 
 | Stat | Value | Description |
 |------|-------|-------------|
-| 1 | **58%** | Increase in pick up point use |
-| 2 | **23%** | Decreased in customer phone calls |
-| 3 | **27%** | Increase in pick up point use |
-| 4 | **40%** | Decreased in customer phone calls |
+| 01 | **58%** | Increase in pick up point use |
+| 02 | **23%** | Decreased in customer phone calls |
+| 03 | **27%** | Increase in pick up point use |
+| 04 | **40%** | Decreased in customer phone calls |
 
 ---
 
@@ -93,7 +60,7 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ```bash
 npm run build
-# Static output generated in ./out/
+# Static export output generated in ./out/
 ```
 
 ---
@@ -102,43 +69,39 @@ npm run build
 
 ```
 itz-fizz-racing/
-├── public/
-│   ├── images/
-│   │   └── racing-bike.jpg        # Racing superbike asset
-│   └── icons/
-│       └── checkered-flag.svg     # Finish line flag
-├── src/
-│   ├── app/
-│   │   ├── globals.css            # Design system & animations
-│   │   ├── layout.jsx             # Root layout + SEO metadata
-│   │   └── page.jsx               # Main page + GSAP animation logic
-│   └── components/
-│       ├── RacingHero.jsx         # Full-screen racing canvas
-│       ├── ImpactStats.jsx        # Four required statistics
-│       ├── RacingTrack.jsx        # SVG circuit with racing line
-│       ├── RacingBike.jsx         # Scroll-driven motorcycle
-│       └── FinishOverlay.jsx      # RACE WON celebration state
 ├── .github/
 │   └── workflows/
-│       └── deploy.yml             # GitHub Pages deployment
-├── next.config.mjs                # Static export config
-└── package.json
+│       └── deploy.yml          # GitHub Pages automated CI/CD pipeline
+├── public/
+│   └── images/
+│       └── bike-topdown.jpg    # Top-down racing motorcycle asset
+├── src/
+│   └── app/
+│       ├── globals.css         # Dark motorsport design system & animations
+│       ├── icon.svg            # Custom ITZ FIZZ badge favicon
+│       ├── layout.jsx          # Root layout + SEO metadata
+│       └── page.jsx            # Scroll-driven vertical track & GSAP logic
+├── jsconfig.json
+├── next.config.mjs             # Static export config with dynamic basePath
+├── package.json
+└── README.md
 ```
 
 ---
 
-## 🚢 Deployment
+## 🚢 Deployment to GitHub Pages
 
-### GitHub Pages Setup
-
-1. Push the repository to GitHub
-2. Go to **Settings → Pages → Source → GitHub Actions**
-3. Push to `main` branch — the workflow automatically builds and deploys
-
-The `next.config.mjs` is pre-configured with:
-- `output: "export"` — static HTML/CSS/JS export
-- `basePath: "/itz-fizz-racing"` — correct asset paths for project URL
-- `images: { unoptimized: true }` — compatible with static export
+1. **Create a repository** on GitHub (e.g. `itz-fizz-racing`).
+2. **Push your code**:
+   ```bash
+   git remote add origin https://github.com/YOUR_USERNAME/itz-fizz-racing.git
+   git branch -M main
+   git push -u origin main
+   ```
+3. **Enable GitHub Pages via Actions**:
+   - Go to **Settings → Pages** in your GitHub repository.
+   - Under **Build and deployment → Source**, select **GitHub Actions**.
+4. The workflow in `.github/workflows/deploy.yml` will automatically build and publish the site.
 
 ---
 
@@ -146,23 +109,18 @@ The `next.config.mjs` is pre-configured with:
 
 | Technology | Purpose |
 |------------|---------|
-| Next.js 16 | React framework + static export |
-| React 19 | UI component library |
-| Tailwind CSS | Utility-first styling |
-| GSAP 3 | Animation engine |
-| GSAP ScrollTrigger | Scroll-driven animation |
-| GitHub Actions | CI/CD pipeline |
-| GitHub Pages | Static hosting |
+| Next.js 16 | React framework with static export (`output: "export"`) |
+| React 19 | Component model |
+| GSAP 3 & ScrollTrigger | High-performance scrub animations |
+| Tailwind CSS & Vanilla CSS | Sleek dark motorsport aesthetic & typography |
+| GitHub Actions | Automated build & deployment |
+| GitHub Pages | Global CDN hosting |
 
 ---
 
 ## 🎨 Design System
 
-- **Background:** `#0a0a0b` (near-black charcoal)
-- **Accent:** `#e8102a` (electric red)
-- **Typography:** Orbitron (display), Inter (body)
-- **Aesthetic:** Dark motorsport — cinematic, editorial, premium
-
----
-
-*Reference: [paraschaturvedi.github.io/car-scroll-animation](https://paraschaturvedi.github.io/car-scroll-animation/)*
+- **Background:** `#0a0a0b` (near-black tarmac)
+- **Track Surface:** `#141416` with illuminated dashed lane markers
+- **Accent:** `#e8102a` (racing crimson)
+- **Typography:** Orbitron (display headings) & Inter (body text)
