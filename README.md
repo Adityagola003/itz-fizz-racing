@@ -6,7 +6,7 @@ A premium scroll-driven motorcycle racing experience inspired by reference track
 
 ## 🌐 Live Demo
 
-> **`https://<YOUR_GITHUB_USERNAME>.github.io/itz-fizz-racing/`**
+> **[https://adityagola003.github.io/itz-fizz-racing/](https://adityagola003.github.io/itz-fizz-racing/)**
 
 ---
 
@@ -44,7 +44,7 @@ A premium scroll-driven motorcycle racing experience inspired by reference track
 
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR_USERNAME/itz-fizz-racing.git
+git clone https://github.com/Adityagola003/itz-fizz-racing.git
 cd itz-fizz-racing
 
 # Install dependencies
@@ -94,7 +94,7 @@ itz-fizz-racing/
 1. **Create a repository** on GitHub (e.g. `itz-fizz-racing`).
 2. **Push your code**:
    ```bash
-   git remote add origin https://github.com/YOUR_USERNAME/itz-fizz-racing.git
+   git remote add origin https://github.com/Adityagola003/itz-fizz-racing.git
    git branch -M main
    git push -u origin main
    ```
